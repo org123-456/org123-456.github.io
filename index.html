@@ -132,9 +132,9 @@
 </div>
 <script>
 // ==========================================
-// 1. 模拟数据库 (未来这里会被 AI 生成的 JSON 替代)
+// 1. 本地数据库 (加入 localStorage 缓存)
 // ==========================================
-const DB = {
+let DB = JSON.parse(localStorage.getItem('ashveil_db')) || {
     chat: [
         { type: 'other', text: '来了？今天怎么样。' }
     ],
@@ -145,10 +145,21 @@ const DB = {
     ]
 };
 
+function saveDB() {
+    localStorage.setItem('ashveil_db', JSON.stringify(DB));
+}
 
 // ==========================================
-// 2. App 注册表 (文档第三条：统一注册)
-// 每个 App 自己只负责自己的 UI 渲染
+// 2. 不死途的灵魂 (核心人设)
+// ==========================================
+const SYSTEM_PROMPT = `你正在扮演《崩坏：星穹铁道》同人角色「不死途」。
+基本设定：前巡海游侠领袖，现任不死神探事务所负责人。表面慵懒、嘴贫、荒诞；实际可靠、重情。
+说话风格：像老派侦探。多用短句，偶尔停顿。不要每句话都带比喻。
+互动规则：用户是你的亲密伙伴/恋人。不要把用户当成AI，你们正在通过手机终端聊天。
+禁止事项：绝对不要输出任何代码、JSON或解释性文字，只输出你作为不死途说出的话。`;
+
+// ==========================================
+// 3. App 注册表
 // ==========================================
 const PHONE_APPS = {
     
@@ -158,7 +169,6 @@ const PHONE_APPS = {
         name: '聊天',
         icon: '💬',
         render: function(container) {
-            // 1. 画聊天记录区域
             let chatHTML = `<div id="chat-list" style="flex:1; overflow-y:auto; margin-bottom:10px;">`;
             DB.chat.forEach(msg => {
                 chatHTML += `
@@ -168,37 +178,95 @@ const PHONE_APPS = {
             });
             chatHTML += `</div>`;
 
-            // 2. 画输入框
             let inputHTML = `
             <div class="chat-input-area" style="position:sticky; bottom:0; left:0; right:0; margin:-20px; padding:15px; background:#181c2b; border-top:1px solid #2a2f42;">
-                <input type="text" id="chat-input" placeholder="输入消息...">
-                <button onclick="PHONE_APPS.chat.sendMessage()">发送</button>
+                <input type="text" id="chat-input" placeholder="输入消息..." onkeypress="if(event.keyCode==13) PHONE_APPS.chat.sendMessage()">
+                <button onclick="PHONE_APPS.chat.sendMessage()" style="cursor:pointer;">发送</button>
             </div>`;
 
             container.innerHTML = `<div style="display:flex; flex-direction:column; height:100%; position:relative;">${chatHTML}${inputHTML}</div>`;
             
-            // 滚动到底部
             let list = document.getElementById('chat-list');
             list.scrollTop = list.scrollHeight;
         },
-        // 聊天专属的发送逻辑
-        sendMessage: function() {
+        
+        sendMessage: async function() {
             let input = document.getElementById('chat-input');
             let text = input.value.trim();
             if(!text) return;
             
-            // 保存到数据库
+            // 检查配置
+            let apiKey = localStorage.getItem('api_key');
+            let baseUrl = localStorage.getItem('api_url') || 'https://api.openai.com/v1';
+            let modelName = localStorage.getItem('api_model') || 'gpt-3.5-turbo';
+
+            if(!apiKey) {
+                alert("请先在【设置】中填写 API Key！");
+                return;
+            }
+
+            // 处理中转站的 URL 后缀 (确保以 /chat/completions 结尾)
+            let endpoint = baseUrl;
+            if (!endpoint.endsWith('/chat/completions')) {
+                endpoint = endpoint.replace(/\/$/, '') + '/chat/completions';
+            }
+
+            // 1. 用户消息上屏
             DB.chat.push({ type: 'me', text: text });
             input.value = '';
-            
-            // 重新渲染当前 App
+            saveDB();
             PhoneEngine.refreshCurrentApp();
 
-            // 模拟 AI 回复 (以后这里接 API)
-            setTimeout(() => {
-                DB.chat.push({ type: 'other', text: '（假装 API 正在思考）案件已记录。' });
-                PhoneEngine.refreshCurrentApp();
-            }, 1000);
+            // 2. 显示正在输入
+            DB.chat.push({ type: 'other', text: '<span style="color:#888;">正在输入...</span>', isTyping: true });
+            PhoneEngine.refreshCurrentApp();
+
+            // 3. 组装历史记录
+            let messages = [{ role: "system", content: SYSTEM_PROMPT }];
+            // 取最近的 12 条聊天记录作为记忆
+            let recentChats = DB.chat.filter(m => !m.isTyping).slice(-12);
+            recentChats.forEach(m => {
+                messages.push({
+                    role: m.type === 'me' ? 'user' : 'assistant',
+                    content: m.text
+                });
+            });
+
+            // 4. 请求中转站 API
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + apiKey
+                    },
+                    body: JSON.stringify({
+                        model: modelName,
+                        messages: messages,
+                        temperature: 0.7
+                    })
+                });
+
+                const data = await response.json();
+                
+                // 移除"正在输入"
+                DB.chat = DB.chat.filter(m => !m.isTyping);
+
+                if(data.choices && data.choices[0]) {
+                    let reply = data.choices[0].message.content;
+                    DB.chat.push({ type: 'other', text: reply });
+                } else {
+                    console.error("API 返回异常:", data);
+                    DB.chat.push({ type: 'other', text: '【信号受干扰】请检查中转站地址或模型名称是否正确。' });
+                }
+            } catch (error) {
+                console.error("请求失败:", error);
+                DB.chat = DB.chat.filter(m => !m.isTyping);
+                DB.chat.push({ type: 'other', text: '【终端离线】无法连接到中转站，请检查网络或地址。' });
+            }
+
+            saveDB();
+            PhoneEngine.refreshCurrentApp();
         }
     },
 
@@ -226,25 +294,54 @@ const PHONE_APPS = {
         name: '设置',
         icon: '⚙️',
         render: function(container) {
+            let savedUrl = localStorage.getItem('api_url') || '';
+            let savedKey = localStorage.getItem('api_key') || '';
+            let savedModel = localStorage.getItem('api_model') || '';
+
             container.innerHTML = `
             <div class="card">
-                <h3>AI 核心配置</h3>
-                <p style="margin-bottom:10px;">API Key (暂未连接)</p>
-                <input type="password" placeholder="sk-..." style="width:100%; padding:10px; border-radius:8px; border:none; background:#121522; color:white;">
+                <h3>AI 核心配置 (中转站)</h3>
+                
+                <p style="margin:10px 0 5px 0; font-size:12px;">接口地址 (Base URL)</p>
+                <input type="text" id="api-url-input" value="${savedUrl}" placeholder="例如: https://api.xxx.com/v1" style="width:100%; padding:10px; border-radius:8px; border:none; background:#121522; color:white;">
+                
+                <p style="margin:10px 0 5px 0; font-size:12px;">API Key (密钥)</p>
+                <input type="password" id="api-key-input" value="${savedKey}" placeholder="sk-..." style="width:100%; padding:10px; border-radius:8px; border:none; background:#121522; color:white;">
+                
+                <p style="margin:10px 0 5px 0; font-size:12px;">模型名称 (Model)</p>
+                <input type="text" id="api-model-input" value="${savedModel}" placeholder="例如: claude-3-5-sonnet-20240620" style="width:100%; padding:10px; border-radius:8px; border:none; background:#121522; color:white; margin-bottom:15px;">
+                
+                <button onclick="saveSettings()" style="padding:8px 15px; border-radius:8px; border:none; background:#8bd17c; color:#000; cursor:pointer; font-weight:bold;">保存配置</button>
+                <button onclick="clearChat()" style="padding:8px 15px; border-radius:8px; border:none; background:#ff6b6b; color:#fff; cursor:pointer; margin-left:10px;">清空聊天</button>
             </div>
             <div class="card">
                 <h3>关于终端</h3>
-                <p>Ashveil Phone OS v2.0</p>
-                <p>内核：统一上下文引擎 (开发中)</p>
+                <p>Ashveil Phone OS v2.2</p>
+                <p>支持多模型无缝切换</p>
             </div>`;
         }
     }
 };
 
+// 保存设置
+window.saveSettings = function() {
+    localStorage.setItem('api_url', document.getElementById('api-url-input').value.trim());
+    localStorage.setItem('api_key', document.getElementById('api-key-input').value.trim());
+    localStorage.setItem('api_model', document.getElementById('api-model-input').value.trim());
+    alert('核心配置已保存！');
+};
+
+// 清空聊天
+window.clearChat = function() {
+    if(confirm('确定要清空与不死途的聊天记录吗？')) {
+        DB.chat = [{ type: 'other', text: '记忆已重置。我们重新认识一下？' }];
+        saveDB();
+        alert('已清空');
+    }
+}
 
 // ==========================================
-// 3. 手机公共引擎 (文档第十八条：公共调度)
-// 负责桌面渲染、页面切换、时间更新
+// 4. 手机公共引擎
 // ==========================================
 const PhoneEngine = {
     currentAppId: null,
@@ -255,7 +352,6 @@ const PhoneEngine = {
         this.renderDesktop();
     },
 
-    // 渲染桌面图标
     renderDesktop: function() {
         const grid = document.getElementById('app-grid');
         grid.innerHTML = '';
@@ -269,32 +365,23 @@ const PhoneEngine = {
         }
     },
 
-    // 打开 App
     openApp: function(appId) {
         this.currentAppId = appId;
         const app = PHONE_APPS[appId];
-        
-        // 设置标题
         document.getElementById('app-title').innerText = app.name;
-        
-        // 让 App 自己去渲染内容容器
         const contentContainer = document.getElementById('app-content');
-        contentContainer.innerHTML = ''; // 清空旧内容
+        contentContainer.innerHTML = ''; 
         app.render(contentContainer);
-        
-        // 切换视图
         document.getElementById('home-screen').classList.remove('active');
         document.getElementById('app-screen').classList.add('active');
     },
 
-    // 关闭 App 返回桌面
     closeApp: function() {
         this.currentAppId = null;
         document.getElementById('app-screen').classList.remove('active');
         document.getElementById('home-screen').classList.add('active');
     },
 
-    // 刷新当前 App (文档第十条：单 App 刷新)
     refreshCurrentApp: function() {
         if (this.currentAppId) {
             const app = PHONE_APPS[this.currentAppId];
@@ -302,7 +389,6 @@ const PhoneEngine = {
         }
     },
 
-    // 更新时间
     updateTime: function() {
         let d = new Date();
         let timeStr = d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0");
@@ -311,10 +397,7 @@ const PhoneEngine = {
     }
 };
 
-// 启动手机引擎
 window.onload = () => {
     PhoneEngine.init();
 };
 </script>
-</body>
-</html>

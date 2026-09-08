@@ -2,209 +2,347 @@
 <html lang="zh-CN">
 
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>不死途 · Ashveil</title>
 
+
 <style>
 
 *{
-    box-sizing:border-box;
+box-sizing:border-box;
 }
+
 
 body{
-    margin:0;
-    background:#08090d;
-    color:#eee;
-    font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+
+margin:0;
+
+height:100vh;
+
+background:#070812;
+
+font-family:
+-apple-system,
+BlinkMacSystemFont,
+"Segoe UI",
+sans-serif;
+
+color:white;
+
+display:flex;
+
+justify-content:center;
+
 }
 
 
-.app{
-    max-width:500px;
-    height:100vh;
-    margin:auto;
-    display:flex;
-    flex-direction:column;
-    background:#0d1018;
+
+.phone{
+
+width:100%;
+
+max-width:430px;
+
+height:100vh;
+
+background:
+linear-gradient(
+180deg,
+#111522,
+#080912
+);
+
+display:flex;
+
+flex-direction:column;
+
+overflow:hidden;
+
 }
+
+
+
+/* 手机状态栏 */
+
+.status{
+
+height:28px;
+
+padding:6px 15px;
+
+font-size:12px;
+
+display:flex;
+
+justify-content:space-between;
+
+color:#aaa;
+
+}
+
+
 
 
 /* 顶部 */
 
 .header{
 
-    height:70px;
-    display:flex;
-    align-items:center;
-    padding:12px 18px;
+height:72px;
 
-    background:#121621;
-    border-bottom:1px solid #252a38;
+display:flex;
+
+align-items:center;
+
+padding:10px 18px;
+
+border-bottom:1px solid #272b3b;
+
+background:#121522;
 
 }
+
+
+.back{
+
+font-size:26px;
+
+margin-right:15px;
+
+color:#ccc;
+
+}
+
 
 
 .avatar{
 
-    width:46px;
-    height:46px;
+width:48px;
 
-    border-radius:50%;
+height:48px;
 
-    background:
-    linear-gradient(
-    135deg,
-    #d9d2ff,
-    #5d547c
-    );
+border-radius:50%;
 
-    margin-right:12px;
+background:
 
-}
+linear-gradient(
+135deg,
+#eee6ff,
+#5d496d
+);
 
+display:flex;
 
-.info h2{
+align-items:center;
 
-    margin:0;
+justify-content:center;
 
-    font-size:18px;
+font-size:24px;
 
-}
-
-
-.info span{
-
-    font-size:12px;
-
-    color:#8bd17c;
+margin-right:12px;
 
 }
 
 
 
-/* 聊天区域 */
+.name{
 
+font-size:18px;
+
+font-weight:600;
+
+}
+
+
+.online{
+
+font-size:12px;
+
+color:#8bd17c;
+
+margin-top:4px;
+
+}
+
+
+
+/* 聊天 */
 
 .chat{
 
-    flex:1;
+flex:1;
 
-    overflow-y:auto;
+overflow-y:auto;
 
-    padding:20px;
+padding:20px 16px;
+
+}
+
+
+
+.message{
+
+display:flex;
+
+margin-bottom:18px;
+
+align-items:flex-start;
+
+}
+
+
+.message.me{
+
+justify-content:flex-end;
 
 }
 
 
 
-/* 气泡 */
+.msg-avatar{
 
-.row{
+width:34px;
 
-    display:flex;
+height:34px;
 
-    margin-bottom:15px;
+border-radius:50%;
+
+background:#4b405f;
+
+display:flex;
+
+align-items:center;
+
+justify-content:center;
+
+font-size:16px;
+
+margin-right:10px;
 
 }
 
 
-.row.me{
+.me .msg-avatar{
 
-    justify-content:flex-end;
+display:none;
+
+}
+
+
+
+.content{
+
+max-width:72%;
+
+}
+
+
+
+.sender{
+
+font-size:12px;
+
+color:#999;
+
+margin-bottom:5px;
 
 }
 
 
 .bubble{
 
-    max-width:75%;
+padding:12px 15px;
 
-    padding:12px 16px;
+border-radius:16px;
 
-    border-radius:18px;
+line-height:1.5;
 
-    line-height:1.5;
+font-size:15px;
 
-    font-size:15px;
-
-}
-
-
-.other .bubble{
-
-    background:#222838;
-
-    border-top-left-radius:5px;
+background:#23283a;
 
 }
+
 
 
 .me .bubble{
 
-    background:#65548f;
+background:#725da3;
 
-    border-top-right-radius:5px;
+border-bottom-right-radius:4px;
+
+}
+
+
+
+.other .bubble{
+
+border-bottom-left-radius:4px;
 
 }
 
 
 
-/* 底部 */
+/* 输入 */
 
+.input-box{
 
-.input-area{
+height:70px;
 
-    display:flex;
+padding:12px;
 
-    padding:12px;
+display:flex;
 
-    background:#121621;
+align-items:center;
 
-    border-top:1px solid #252a38;
+background:#121522;
 
-}
-
-
-input{
-
-    flex:1;
-
-    background:#202532;
-
-    border:none;
-
-    outline:none;
-
-    color:white;
-
-    padding:12px;
-
-    border-radius:20px;
-
-    font-size:15px;
+border-top:1px solid #272b3b;
 
 }
 
 
-button{
 
-    margin-left:10px;
+.input-box input{
 
-    width:55px;
+flex:1;
 
-    border:none;
+height:42px;
 
-    border-radius:20px;
+border-radius:22px;
 
-    background:#cbb7ff;
+border:none;
 
-    color:#17121f;
+outline:none;
+
+background:#222738;
+
+color:white;
+
+padding:0 18px;
+
+font-size:15px;
+
+}
+
+
+.send{
+
+width:48px;
+
+height:42px;
+
+margin-left:10px;
+
+border-radius:22px;
+
+border:none;
+
+background:#cbb7ff;
+
+color:#20172c;
 
 }
 
@@ -218,19 +356,49 @@ button{
 <body>
 
 
-<div class="app">
+<div class="phone">
+
+
+<div class="status">
+
+<span>02:36</span>
+
+<span>◉  WiFi  🔋</span>
+
+</div>
+
 
 
 <div class="header">
 
-<div class="avatar"></div>
+
+<div class="back">
+
+←
+
+</div>
 
 
-<div class="info">
+<div class="avatar">
 
-<h2>不死途</h2>
+🎩
 
-<span>● 在线</span>
+</div>
+
+
+<div>
+
+<div class="name">
+
+不死途
+
+</div>
+
+<div class="online">
+
+● 在线
+
+</div>
 
 </div>
 
@@ -242,7 +410,25 @@ button{
 <div class="chat" id="chat">
 
 
-<div class="row other">
+<div class="message other">
+
+
+<div class="msg-avatar">
+
+🎩
+
+</div>
+
+
+<div class="content">
+
+
+<div class="sender">
+
+不死途
+
+</div>
+
 
 <div class="bubble">
 
@@ -254,59 +440,139 @@ button{
 
 </div>
 
-</div>
-
 
 </div>
 
 
-
-<div class="input-area">
-
-
-<input 
-id="input"
-placeholder="输入消息……"
->
+</div>
 
 
-<button onclick="send()">
+
+</div>
+
+
+<div class="input-box">
+
+
+<input id="input" placeholder="输入消息……">
+
+
+<button class="send" onclick="send()">
+
 发
+
 </button>
 
 
 </div>
 
 
+
 </div>
-
-
 <script>
 
 
-let chat = document.getElementById("chat");
-let input = document.getElementById("input");
+const chat = document.getElementById("chat");
+
+const input = document.getElementById("input");
 
 
-// 不死途初始回复库
 
-let replies = [
+let replies=[
 
-"嗯？来了。今天怎么样？",
+"嗯。来了就坐吧。",
 
-"看起来你有话想说。坐吧，我听着。",
+"我在听。慢慢说。",
 
-"事务所今天还算安静，暂时没有什么东西追着我跑。算是好消息。",
+"今天看起来不太顺利。",
 
-"我在。慢慢说，不用急。",
+"别急，把事情一件件说。",
 
-"让我猜猜……你不是单纯来问好的。发生什么了？"
+"鸽川区今晚很安静，适合聊天。",
+
+"你不是只是来打招呼的，对吧？"
 
 ];
 
 
 
-// 发送消息
+
+// 添加消息
+
+function addMessage(text,type){
+
+
+let box=document.createElement("div");
+
+
+box.className=
+"message "+type;
+
+
+
+if(type==="other"){
+
+
+box.innerHTML=
+
+`
+
+<div class="msg-avatar">
+🎩
+</div>
+
+<div class="content">
+
+<div class="sender">
+不死途
+</div>
+
+<div class="bubble">
+${text}
+</div>
+
+</div>
+
+`;
+
+
+
+}else{
+
+
+box.innerHTML=
+
+`
+
+<div class="content">
+
+<div class="sender">
+你
+</div>
+
+<div class="bubble">
+${text}
+</div>
+
+</div>
+
+`;
+
+}
+
+
+chat.appendChild(box);
+
+
+chat.scrollTop=chat.scrollHeight;
+
+
+}
+
+
+
+
+// 发送
 
 function send(){
 
@@ -314,13 +580,13 @@ function send(){
 let text=input.value.trim();
 
 
-if(text===""){
+if(!text){
+
 return;
+
 }
 
 
-
-// 用户消息
 
 addMessage(
 text,
@@ -328,52 +594,70 @@ text,
 );
 
 
-
 input.value="";
 
 
 
-// 模拟思考时间
 
-let wait=document.createElement("div");
+// 输入状态
 
-wait.className="row other";
+let typing=document.createElement("div");
 
-wait.innerHTML=
+
+typing.className=
+"message other";
+
+
+typing.innerHTML=
+
 `
-<div class="bubble">
-……
+
+<div class="msg-avatar">
+🎩
 </div>
+
+<div class="content">
+
+<div class="sender">
+不死途
+</div>
+
+<div class="bubble">
+<span id="dots">
+正在输入
+</span>
+</div>
+
+</div>
+
 `;
 
-chat.appendChild(wait);
+
+chat.appendChild(typing);
+
 
 chat.scrollTop=chat.scrollHeight;
+
 
 
 
 setTimeout(()=>{
 
 
-chat.removeChild(wait);
-
-
-
-let reply=getReply(text);
+typing.remove();
 
 
 
 addMessage(
-reply,
+getReply(text),
 "other"
 );
-
 
 
 save();
 
 
-},1000);
+},1200);
 
 
 
@@ -381,83 +665,52 @@ save();
 
 
 
-// 添加聊天气泡
 
-function addMessage(text,type){
-
-
-let row=document.createElement("div");
-
-row.className="row "+type;
-
-
-row.innerHTML=
-`
-<div class="bubble">
-${text}
-</div>
-`;
-
-
-
-chat.appendChild(row);
-
-
-chat.scrollTop=chat.scrollHeight;
-
-
-}
-
-
-
-// 简单回复逻辑
+// 简单人格回复
 
 function getReply(text){
 
 
+
 if(
-text.includes("你好") ||
+text.includes("累")||
+text.includes("烦")||
+text.includes("难过")
+){
+
+return "嗯……听起来今天消耗了很多。先不用急着解决所有事情，告诉我发生什么了。";
+
+}
+
+
+
+if(
+text.includes("你好")||
 text.includes("在吗")
 ){
 
 return "在。怎么，终于想起来找我了？";
 
-
 }
 
 
+
 if(
-text.includes("累") ||
-text.includes("烦") ||
-text.includes("难过")
+text.includes("想你")
 ){
 
-return "嗯……听起来今天不太顺。先坐一会儿，告诉我发生什么了。";
-
-
-}
-
-
-
-if(
-text.includes("想你") ||
-text.includes("想我")
-){
-
-return "想我了？这症状听起来不轻。不过……我暂时没有开治疗思念的药。";
-
+return "想我？这个委托我暂时不会收费。";
 
 }
 
 
 
 if(
-text.includes("案件") ||
+text.includes("案件")||
 text.includes("调查")
 ){
 
-return "好，案件模式启动。把你知道的线索告诉我，别漏掉细节。";
-
+return "好，案件模式开启。把线索给我，时间、地点、人物，一个都别漏。";
 
 }
 
@@ -474,13 +727,14 @@ Math.random()*replies.length
 
 
 
-// 保存聊天
+
+// 保存
 
 function save(){
 
 
 localStorage.setItem(
-"ashveil_chat",
+"ashveil",
 chat.innerHTML
 );
 
@@ -489,15 +743,16 @@ chat.innerHTML
 
 
 
-// 读取聊天
+// 加载
 
 window.onload=function(){
 
 
 let old=
 localStorage.getItem(
-"ashveil_chat"
+"ashveil"
 );
+
 
 
 if(old){
@@ -507,7 +762,7 @@ chat.innerHTML=old;
 }
 
 
-}
+};
 
 
 
@@ -518,11 +773,13 @@ input.addEventListener(
 "keydown",
 function(e){
 
+
 if(e.key==="Enter"){
 
 send();
 
 }
+
 
 });
 

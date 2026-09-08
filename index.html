@@ -1,779 +1,320 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
-
 <meta charset="UTF-8">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Ashveil Phone</title>
-
-
+<title>Ashveil Phone OS</title>
 <style>
-
-*{
-box-sizing:border-box;
-}
-
-
-body{
-
-margin:0;
-
-height:100vh;
-
-background:#05060b;
-
-display:flex;
-
-justify-content:center;
-
-align-items:center;
-
-font-family:
--apple-system,
-BlinkMacSystemFont,
-"Segoe UI",
-sans-serif;
-
-color:white;
-
-}
-
-
-
-.phone{
-
-width:390px;
-
-height:820px;
-
-max-height:100vh;
-
-background:#10131d;
-
-border-radius:45px;
-
-border:8px solid #222633;
-
-overflow:hidden;
-
-position:relative;
-
-box-shadow:
-0 0 40px rgba(0,0,0,.8);
-
-}
-
-
-
-
-/* 状态栏 */
-
-
-.status{
-
-height:35px;
-
-padding:10px 22px;
-
-display:flex;
-
-justify-content:space-between;
-
-font-size:13px;
-
-color:#ddd;
-
-}
-
-
-
-
-/* 页面 */
-
-.page{
-
-height:calc(100% - 35px);
-
-display:none;
-
-flex-direction:column;
-
-}
-
-
-
-.page.active{
-
-display:flex;
-
-}
-
-
-
-
-/* 桌面 */
-
-
-.home{
-
-padding:40px 25px;
-
-background:
-
-linear-gradient(
-180deg,
-#171b2b,
-#090b12
-);
-
-}
-
-
-
-.wall-title{
-
-text-align:center;
-
-font-size:22px;
-
-margin-bottom:45px;
-
-letter-spacing:2px;
-
-}
-
-
-
-.apps{
-
-display:grid;
-
-grid-template-columns:repeat(2,1fr);
-
-gap:35px;
-
-}
-
-
-
-.app-icon{
-
-text-align:center;
-
-cursor:pointer;
-
-}
-
-
-
-.icon{
-
-width:70px;
-
-height:70px;
-
-margin:auto;
-
-border-radius:20px;
-
-background:#252b40;
-
-display:flex;
-
-align-items:center;
-
-justify-content:center;
-
-font-size:32px;
-
-}
-
-
-
-.app-name{
-
-margin-top:10px;
-
-font-size:14px;
-
-color:#ddd;
-
-}
-
-
-
-
-/* app顶部 */
-
-
-.header{
-
-height:60px;
-
-display:flex;
-
-align-items:center;
-
-padding:0 18px;
-
-background:#151927;
-
-border-bottom:1px solid #303548;
-
-}
-
-
-
-.back{
-
-font-size:26px;
-
-margin-right:15px;
-
-cursor:pointer;
-
-}
-
-
-
-.title{
-
-font-size:18px;
-
-font-weight:bold;
-
-}
-
-
-
-
-/* 内容 */
-
-.content{
-
-padding:20px;
-
-overflow:auto;
-
-line-height:1.7;
-
-}
-
-
-
-.card{
-
-background:#202638;
-
-border-radius:15px;
-
-padding:18px;
-
-margin-bottom:15px;
-
-}
-
-
-
+    * { box-sizing: border-box; }
+    body {
+        margin: 0; height: 100vh; background: #05060b;
+        display: flex; justify-content: center; align-items: center;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: white;
+    }
+    
+    /* 手机外壳 */
+    .phone {
+        width: 390px; height: 820px; max-height: 100vh;
+        background: #0d111a; border-radius: 40px;
+        border: 8px solid #1a1e29; overflow: hidden;
+        position: relative; box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        display: flex; flex-direction: column;
+    }
+
+    /* 状态栏 */
+    .status-bar {
+        height: 40px; padding: 0 25px; display: flex;
+        justify-content: space-between; align-items: center;
+        font-size: 13px; color: #aaa; z-index: 10;
+    }
+
+    /* 屏幕视图容器 */
+    .screen {
+        flex: 1; display: none; flex-direction: column;
+        overflow: hidden;
+    }
+    .screen.active { display: flex; }
+
+    /* 桌面 */
+    #home-screen {
+        padding: 30px 20px;
+        background: linear-gradient(180deg, #171b2b, #090b12);
+    }
+    .clock-widget {
+        text-align: center; margin-bottom: 50px;
+    }
+    .clock-widget h1 { margin: 0; font-size: 48px; font-weight: 300; letter-spacing: 2px;}
+    .clock-widget p { margin: 5px 0 0 0; color: #888; font-size: 14px; }
+    
+    .app-grid {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px 10px;
+    }
+    .app-icon-wrapper {
+        display: flex; flex-direction: column; align-items: center; cursor: pointer;
+    }
+    .app-icon {
+        width: 60px; height: 60px; border-radius: 18px;
+        background: #252b40; display: flex; justify-content: center;
+        align-items: center; font-size: 28px; margin-bottom: 8px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    .app-name { font-size: 12px; color: #ccc; }
+
+    /* App 内部通用框架 */
+    #app-screen { background: #121522; }
+    .app-header {
+        height: 60px; display: flex; align-items: center; padding: 0 20px;
+        background: #181c2b; border-bottom: 1px solid #2a2f42;
+    }
+    .back-btn { font-size: 24px; margin-right: 15px; cursor: pointer; color: #8bd17c; }
+    .app-title { font-size: 18px; font-weight: bold; }
+    .app-content { flex: 1; overflow-y: auto; padding: 20px; }
+
+    /* 通用卡片样式 (世界书、设置用) */
+    .card {
+        background: #1e2333; border-radius: 12px; padding: 16px;
+        margin-bottom: 15px; border: 1px solid #2a2f42;
+    }
+    .card h3 { margin: 0 0 10px 0; color: #d8c2ff; font-size: 16px; }
+    .card p { margin: 0; color: #bbb; font-size: 14px; line-height: 1.6; }
+
+    /* 聊天气泡样式 */
+    .msg-row { display: flex; margin-bottom: 15px; }
+    .msg-row.me { justify-content: flex-end; }
+    .bubble {
+        max-width: 75%; padding: 12px 16px; border-radius: 16px;
+        font-size: 15px; line-height: 1.5; background: #23283a;
+    }
+    .msg-row.other .bubble { border-top-left-radius: 4px; }
+    .msg-row.me .bubble { background: #65548f; border-top-right-radius: 4px; }
+    .chat-input-area {
+        display: flex; padding: 12px; background: #181c2b; border-top: 1px solid #2a2f42;
+    }
+    .chat-input-area input {
+        flex: 1; height: 40px; border-radius: 20px; border: none;
+        background: #252b40; color: white; padding: 0 15px; outline: none;
+    }
+    .chat-input-area button {
+        margin-left: 10px; width: 60px; border-radius: 20px; border: none;
+        background: #8bd17c; color: #000; font-weight: bold;
+    }
 </style>
-
 </head>
-
-
 <body>
 
-
-
 <div class="phone">
+    <!-- 顶部状态栏 -->
+    <div class="status-bar">
+        <span id="status-time">00:00</span>
+        <span>◉ WiFi 🔋</span>
+    </div>
 
+    <!-- 桌面视图 -->
+    <div id="home-screen" class="screen active">
+        <div class="clock-widget">
+            <h1 id="widget-time">00:00</h1>
+            <p>鸽川区 · 侦探终端</p>
+        </div>
+        <!-- App 图标会由 JS 动态生成到这里 -->
+        <div class="app-grid" id="app-grid"></div>
+    </div>
 
-
-<div class="status">
-
-<span id="time">
-
-02:44
-
-</span>
-
-<span>
-
-◉ WiFi 🔋
-
-</span>
-
+    <!-- App 运行视图 -->
+    <div id="app-screen" class="screen">
+        <div class="app-header">
+            <div class="back-btn" onclick="PhoneEngine.closeApp()">←</div>
+            <div class="app-title" id="app-title">App Name</div>
+        </div>
+        <!-- App 内容会由 JS 动态生成到这里 -->
+        <div class="app-content" id="app-content"></div>
+    </div>
 </div>
-
-
-
-<!-- 桌面 -->
-
-
-<div class="page home active" id="home">
-
-
-<div class="wall-title">
-
-Ashveil
-
-</div>
-
-
-
-<div class="apps">
-
-
-<div class="app-icon" onclick="openApp('chat')">
-
-<div class="icon">
-
-💬
-
-</div>
-
-<div class="app-name">
-
-聊天
-
-</div>
-
-</div>
-
-
-
-<div class="app-icon" onclick="openApp('memory')">
-
-<div class="icon">
-
-📖
-
-</div>
-
-<div class="app-name">
-
-回忆
-
-</div>
-
-</div>
-
-
-
-<div class="app-icon" onclick="openApp('case')">
-
-<div class="icon">
-
-🕵
-
-</div>
-
-<div class="app-name">
-
-案件
-
-</div>
-
-</div>
-
-
-
-<div class="app-icon" onclick="openApp('setting')">
-
-<div class="icon">
-
-⚙️
-
-</div>
-
-<div class="app-name">
-
-设置
-
-</div>
-
-</div>
-
-
-
-</div>
-
-
-</div>
-<!-- 聊天 App -->
-
-<div class="page" id="chat">
-
-
-<div class="header">
-
-<div class="back" onclick="goHome()">
-
-←
-
-</div>
-
-<div class="title">
-
-💬 与不死途聊天
-
-</div>
-
-</div>
-
-
-
-<div class="content" id="chatBox">
-
-
-<div class="card">
-
-🎩 不死途：
-
-<br>
-
-来了？
-
-<br>
-
-欢迎回到事务所。
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-
-
-
-<!-- 回忆 App -->
-
-
-<div class="page" id="memory">
-
-
-<div class="header">
-
-
-<div class="back" onclick="goHome()">
-
-←
-
-</div>
-
-
-<div class="title">
-
-📖 回忆录
-
-</div>
-
-
-</div>
-
-
-
-<div class="content">
-
-
-<div class="card">
-
-
-旧日记录
-
-<br><br>
-
-
-“有些人离开以后，
-
-名字不能跟着一起消失。”
-
-
-<br><br>
-
-
-—— 不死途
-
-
-</div>
-
-
-
-<div class="card">
-
-
-鸽川区档案
-
-<br><br>
-
-
-未知时间。
-
-<br>
-
-未知地点。
-
-<br>
-
-留下了一块旧怀表。
-
-</div>
-
-
-
-</div>
-
-
-</div>
-
-
-
-
-
-
-
-<!-- 案件 App -->
-
-
-<div class="page" id="case">
-
-
-<div class="header">
-
-
-<div class="back" onclick="goHome()">
-
-←
-
-</div>
-
-
-<div class="title">
-
-🕵 案件簿
-
-</div>
-
-
-</div>
-
-
-
-<div class="content">
-
-
-
-<div class="card">
-
-
-当前委托：
-
-<br><br>
-
-
-◆ 寻找失踪物品
-
-<br>
-
-状态：
-
-调查中
-
-
-</div>
-
-
-
-<div class="card">
-
-
-危险档案：
-
-<br><br>
-
-
-原始博士相关线索
-
-<br>
-
-等级：
-
-未知
-
-
-</div>
-
-
-</div>
-
-
-
-</div>
-
-
-
-
-
-
-
-
-<!-- 设置 -->
-
-
-<div class="page" id="setting">
-
-
-<div class="header">
-
-
-<div class="back" onclick="goHome()">
-
-←
-
-</div>
-
-
-<div class="title">
-
-⚙ 设置
-
-</div>
-
-
-</div>
-
-
-
-<div class="content">
-
-
-<div class="card">
-
-角色：
-
-<br>
-
-不死途 Ashveil
-
-</div>
-
-
-
-<div class="card">
-
-版本：
-
-<br>
-
-Private Phone v1.0
-
-</div>
-
-
-
-</div>
-
-
-</div>
-
-
-
-
-</div>
-
-
-
-
 <script>
+// ==========================================
+// 1. 模拟数据库 (未来这里会被 AI 生成的 JSON 替代)
+// ==========================================
+const DB = {
+    chat: [
+        { type: 'other', text: '来了？今天怎么样。' }
+    ],
+    worldbook: [
+        { title: '鸽川区', content: '二相乐园的一个区域，鱼龙混杂，不死神探事务所所在地。' },
+        { title: '贪饕之影', content: '寄宿在不死途右臂的异常力量，发作时左眼颜色变深。' },
+        { title: '睡蕉小猴「旁白」', content: '不死途的助手，事务所书记员，吐槽担当。' }
+    ]
+};
 
 
-// 时间
+// ==========================================
+// 2. App 注册表 (文档第三条：统一注册)
+// 每个 App 自己只负责自己的 UI 渲染
+// ==========================================
+const PHONE_APPS = {
+    
+    // --- 聊天 App ---
+    chat: {
+        id: 'chat',
+        name: '聊天',
+        icon: '💬',
+        render: function(container) {
+            // 1. 画聊天记录区域
+            let chatHTML = `<div id="chat-list" style="flex:1; overflow-y:auto; margin-bottom:10px;">`;
+            DB.chat.forEach(msg => {
+                chatHTML += `
+                <div class="msg-row ${msg.type}">
+                    <div class="bubble">${msg.text}</div>
+                </div>`;
+            });
+            chatHTML += `</div>`;
 
-function updateTime(){
+            // 2. 画输入框
+            let inputHTML = `
+            <div class="chat-input-area" style="position:sticky; bottom:0; left:0; right:0; margin:-20px; padding:15px; background:#181c2b; border-top:1px solid #2a2f42;">
+                <input type="text" id="chat-input" placeholder="输入消息...">
+                <button onclick="PHONE_APPS.chat.sendMessage()">发送</button>
+            </div>`;
 
-let d=new Date();
+            container.innerHTML = `<div style="display:flex; flex-direction:column; height:100%; position:relative;">${chatHTML}${inputHTML}</div>`;
+            
+            // 滚动到底部
+            let list = document.getElementById('chat-list');
+            list.scrollTop = list.scrollHeight;
+        },
+        // 聊天专属的发送逻辑
+        sendMessage: function() {
+            let input = document.getElementById('chat-input');
+            let text = input.value.trim();
+            if(!text) return;
+            
+            // 保存到数据库
+            DB.chat.push({ type: 'me', text: text });
+            input.value = '';
+            
+            // 重新渲染当前 App
+            PhoneEngine.refreshCurrentApp();
+
+            // 模拟 AI 回复 (以后这里接 API)
+            setTimeout(() => {
+                DB.chat.push({ type: 'other', text: '（假装 API 正在思考）案件已记录。' });
+                PhoneEngine.refreshCurrentApp();
+            }, 1000);
+        }
+    },
+
+    // --- 世界书 App ---
+    worldbook: {
+        id: 'worldbook',
+        name: '世界书',
+        icon: '📖',
+        render: function(container) {
+            let html = `<div style="margin-bottom:20px; color:#8bd17c; font-size:14px;">当前读取：Ashveil 档案库</div>`;
+            DB.worldbook.forEach(item => {
+                html += `
+                <div class="card">
+                    <h3>${item.title}</h3>
+                    <p>${item.content}</p>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+    },
+
+    // --- 设置 App ---
+    settings: {
+        id: 'settings',
+        name: '设置',
+        icon: '⚙️',
+        render: function(container) {
+            container.innerHTML = `
+            <div class="card">
+                <h3>AI 核心配置</h3>
+                <p style="margin-bottom:10px;">API Key (暂未连接)</p>
+                <input type="password" placeholder="sk-..." style="width:100%; padding:10px; border-radius:8px; border:none; background:#121522; color:white;">
+            </div>
+            <div class="card">
+                <h3>关于终端</h3>
+                <p>Ashveil Phone OS v2.0</p>
+                <p>内核：统一上下文引擎 (开发中)</p>
+            </div>`;
+        }
+    }
+};
 
 
-document.getElementById("time").innerText=
+// ==========================================
+// 3. 手机公共引擎 (文档第十八条：公共调度)
+// 负责桌面渲染、页面切换、时间更新
+// ==========================================
+const PhoneEngine = {
+    currentAppId: null,
 
-d.getHours()
-+
-":"
-+
-String(d.getMinutes()).padStart(2,"0");
+    init: function() {
+        this.updateTime();
+        setInterval(() => this.updateTime(), 1000);
+        this.renderDesktop();
+    },
 
-}
+    // 渲染桌面图标
+    renderDesktop: function() {
+        const grid = document.getElementById('app-grid');
+        grid.innerHTML = '';
+        for (let key in PHONE_APPS) {
+            let app = PHONE_APPS[key];
+            grid.innerHTML += `
+            <div class="app-icon-wrapper" onclick="PhoneEngine.openApp('${app.id}')">
+                <div class="app-icon">${app.icon}</div>
+                <div class="app-name">${app.name}</div>
+            </div>`;
+        }
+    },
 
+    // 打开 App
+    openApp: function(appId) {
+        this.currentAppId = appId;
+        const app = PHONE_APPS[appId];
+        
+        // 设置标题
+        document.getElementById('app-title').innerText = app.name;
+        
+        // 让 App 自己去渲染内容容器
+        const contentContainer = document.getElementById('app-content');
+        contentContainer.innerHTML = ''; // 清空旧内容
+        app.render(contentContainer);
+        
+        // 切换视图
+        document.getElementById('home-screen').classList.remove('active');
+        document.getElementById('app-screen').classList.add('active');
+    },
 
-setInterval(updateTime,1000);
+    // 关闭 App 返回桌面
+    closeApp: function() {
+        this.currentAppId = null;
+        document.getElementById('app-screen').classList.remove('active');
+        document.getElementById('home-screen').classList.add('active');
+    },
 
-updateTime();
+    // 刷新当前 App (文档第十条：单 App 刷新)
+    refreshCurrentApp: function() {
+        if (this.currentAppId) {
+            const app = PHONE_APPS[this.currentAppId];
+            app.render(document.getElementById('app-content'));
+        }
+    },
 
+    // 更新时间
+    updateTime: function() {
+        let d = new Date();
+        let timeStr = d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0");
+        document.getElementById("status-time").innerText = timeStr;
+        document.getElementById("widget-time").innerText = timeStr;
+    }
+};
 
-
-
-
-// 打开 App
-
-
-function openApp(id){
-
-
-document
-.querySelectorAll(".page")
-.forEach(p=>{
-
-p.classList.remove("active");
-
-});
-
-
-document
-.getElementById(id)
-.classList.add("active");
-
-
-}
-
-
-
-
-// 返回桌面
-
-
-function goHome(){
-
-
-document
-.querySelectorAll(".page")
-.forEach(p=>{
-
-p.classList.remove("active");
-
-});
-
-
-document
-.getElementById("home")
-.classList.add("active");
-
-
-}
-
-
-
-
-
+// 启动手机引擎
+window.onload = () => {
+    PhoneEngine.init();
+};
 </script>
-
-
-
 </body>
-
 </html>

@@ -99,196 +99,183 @@
         margin-left: 10px; width: 60px; border-radius: 20px; border: none;
         background: #8bd17c; color: #000; font-weight: bold;
     }
-</style>
-</head>
-<body>
-
-<div class="phone">
-    <!-- 顶部状态栏 -->
-    <div class="status-bar">
-        <span id="status-time">00:00</span>
-        <span>◉ WiFi 🔋</span>
-    </div>
-
-    <!-- 桌面视图 -->
-    <div id="home-screen" class="screen active">
-        <div class="clock-widget">
-            <h1 id="widget-time">00:00</h1>
-            <p>鸽川区 · 侦探终端</p>
-        </div>
-        <!-- App 图标会由 JS 动态生成到这里 -->
-        <div class="app-grid" id="app-grid"></div>
-    </div>
-
-    <!-- App 运行视图 -->
-    <div id="app-screen" class="screen">
-        <div class="app-header">
-            <div class="back-btn" onclick="PhoneEngine.closeApp()">←</div>
-            <div class="app-title" id="app-title">App Name</div>
-        </div>
-        <!-- App 内容会由 JS 动态生成到这里 -->
-        <div class="app-content" id="app-content"></div>
-    </div>
-</div>
-<script>
+        <script>
 // ==========================================
-// 1. 本地数据库 (加入 localStorage 缓存)
+// 1. 本地数据库 (升级为全局统一时间线)
 // ==========================================
-let DB = JSON.parse(localStorage.getItem('ashveil_db')) || {
-    chat: [
-        { type: 'other', text: '来了？今天怎么样。' }
-    ],
-    worldbook: [
-        { title: '鸽川区', content: '二相乐园的一个区域，鱼龙混杂，不死神探事务所所在地。' },
-        { title: '贪饕之影', content: '寄宿在不死途右臂的异常力量，发作时左眼颜色变深。' },
-        { title: '睡蕉小猴「旁白」', content: '不死途的助手，事务所书记员，吐槽担当。' }
+let localData = JSON.parse(localStorage.getItem('ashveil_db')) || {};
+let DB = {
+    global_chat: localData.global_chat || [],
+    worldbook: localData.worldbook || [
+        { id: 1, title: '鸽川区', content: '二相乐园的一个区域，鱼龙混杂，不死神探事务所所在地。' },
+        { id: 2, title: '旁白', content: '睡蕉小猴，不死途的助手。' }
     ]
 };
+
+// 兼容老版本数据迁移
+if (DB.global_chat.length === 0) {
+    if (localData.online_chat || localData.offline_chat) {
+        if(localData.online_chat) localData.online_chat.forEach(m => DB.global_chat.push({...m, scene: 'online_chat'}));
+        if(localData.offline_chat) localData.offline_chat.forEach(m => DB.global_chat.push({...m, scene: 'offline_chat'}));
+    } else {
+        DB.global_chat = [
+            { type: 'other', scene: 'online_chat', text: '到了发个消息。' },
+            { type: 'other', scene: 'offline_chat', text: '*不死途靠在办公桌上，抬眼看着你* 来了？' }
+        ];
+    }
+}
 
 function saveDB() {
     localStorage.setItem('ashveil_db', JSON.stringify(DB));
 }
 
 // ==========================================
-// 2. 不死途的灵魂 (核心人设)
+// 2. 公共聊天发送逻辑 (带场景感知的 AI 引擎)
 // ==========================================
-const SYSTEM_PROMPT = `你正在扮演《崩坏：星穹铁道》同人角色「不死途」。
-基本设定：前巡海游侠领袖，现任不死神探事务所负责人。表面慵懒、嘴贫、荒诞；实际可靠、重情。
-说话风格：像老派侦探。多用短句，偶尔停顿。不要每句话都带比喻。
-互动规则：用户是你的亲密伙伴/恋人。不要把用户当成AI，你们正在通过手机终端聊天。
-禁止事项：绝对不要输出任何代码、JSON或解释性文字，只输出你作为不死途说出的话。`;
+window.handleChatSend = async function(appId) {
+    let input = document.getElementById(`chat-input-${appId}`);
+    let text = input.value.trim();
+    if(!text) return;
+    
+    let apiKey = localStorage.getItem('api_key');
+    let baseUrl = localStorage.getItem('api_url') || 'https://api.openai.com/v1';
+    let modelName = localStorage.getItem('api_model') || 'gpt-3.5-turbo';
+    let maxTokens = parseInt(localStorage.getItem('api_max_tokens')) || 150;
+    let basePrompt = localStorage.getItem('api_system_prompt') || '你正在扮演《崩坏：星穹铁道》同人角色「不死途」。';
+    let useWorldbook = localStorage.getItem('api_use_worldbook') === 'true';
+
+    if(!apiKey) {
+        alert("请先在【设置】中填写 API Key！");
+        return;
+    }
+
+    let endpoint = baseUrl;
+    if (!endpoint.endsWith('/chat/completions')) {
+        endpoint = endpoint.replace(/\/$/, '') + '/chat/completions';
+    }
+
+    // 1. 用户消息存入全局时间线 (打上场景标签)
+    DB.global_chat.push({ type: 'me', scene: appId, text: text });
+    input.value = '';
+    saveDB();
+    PhoneEngine.refreshCurrentApp();
+
+    // 2. 显示正在输入
+    DB.global_chat.push({ type: 'other', scene: appId, text: '<span style="color:#888;">正在输入...</span>', isTyping: true });
+    PhoneEngine.refreshCurrentApp();
+
+    // 3. 构建系统 Prompt
+    let finalSystemPrompt = basePrompt;
+    
+    // 告诉 AI 当前处于什么场景
+    if (appId === 'online_chat') {
+        finalSystemPrompt += "\n\n【当前状态：用户正在通过手机给你发短信。请用简短的文本回复，不要包含动作描写。】";
+    } else if (appId === 'offline_chat') {
+        finalSystemPrompt += "\n\n【当前状态：你和用户正在面对面交谈。请包含神态和动作描写（用*包裹）。】";
+    }
+
+    if (useWorldbook && DB.worldbook.length > 0) {
+        finalSystemPrompt += "\n\n【世界观参考资料】：\n";
+        DB.worldbook.forEach(item => {
+            finalSystemPrompt += `- ${item.title}: ${item.content}\n`;
+        });
+    }
+
+    let messages = [{ role: "system", content: finalSystemPrompt }];
+    
+    // 取最近的 15 条全局聊天记录作为记忆（包含线上和线下）
+    let recentChats = DB.global_chat.filter(m => !m.isTyping).slice(-15);
+    recentChats.forEach(m => {
+        // 给历史记录打上提示标签，让 AI 知道这句话是在哪里说的
+        let prefix = m.scene === 'online_chat' ? '【线上短信】' : '【面对面】';
+        messages.push({
+            role: m.type === 'me' ? 'user' : 'assistant',
+            content: prefix + m.text
+        });
+    });
+
+    // 4. 请求 API
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey
+            },
+            body: JSON.stringify({
+                model: modelName,
+                messages: messages,
+                temperature: 0.7,
+                max_tokens: maxTokens
+            })
+        });
+
+        const data = await response.json();
+        // 移除正在输入状态
+        DB.global_chat = DB.global_chat.filter(m => !m.isTyping);
+
+        if(data.choices && data.choices[0]) {
+            let reply = data.choices[0].message.content;
+            // 清理 AI 可能错误模仿的标签前缀
+            reply = reply.replace(/^【线上短信】|^【面对面】/g, '').trim();
+            DB.global_chat.push({ type: 'other', scene: appId, text: reply });
+        } else {
+            DB.global_chat.push({ type: 'other', scene: appId, text: '【信号受干扰】' });
+        }
+    } catch (error) {
+        DB.global_chat = DB.global_chat.filter(m => !m.isTyping);
+        DB.global_chat.push({ type: 'other', scene: appId, text: '【终端离线】无法连接。' });
+    }
+
+    saveDB();
+    PhoneEngine.refreshCurrentApp();
+}
 
 // ==========================================
 // 3. App 注册表
 // ==========================================
 const PHONE_APPS = {
-    
-    // --- 聊天 App ---
-    chat: {
-        id: 'chat',
-        name: '聊天',
+    online_chat: {
+        id: 'online_chat',
+        name: '线上通讯',
         icon: '💬',
         render: function(container) {
-            let chatHTML = `<div id="chat-list" style="flex:1; overflow-y:auto; margin-bottom:10px;">`;
-            DB.chat.forEach(msg => {
-                chatHTML += `
-                <div class="msg-row ${msg.type}">
-                    <div class="bubble">${msg.text}</div>
-                </div>`;
-            });
-            chatHTML += `</div>`;
-
-            let inputHTML = `
-            <div class="chat-input-area" style="position:sticky; bottom:0; left:0; right:0; margin:-20px; padding:15px; background:#181c2b; border-top:1px solid #2a2f42;">
-                <input type="text" id="chat-input" placeholder="输入消息..." onkeypress="if(event.keyCode==13) PHONE_APPS.chat.sendMessage()">
-                <button onclick="PHONE_APPS.chat.sendMessage()" style="cursor:pointer;">发送</button>
-            </div>`;
-
-            container.innerHTML = `<div style="display:flex; flex-direction:column; height:100%; position:relative;">${chatHTML}${inputHTML}</div>`;
-            
-            let list = document.getElementById('chat-list');
-            list.scrollTop = list.scrollHeight;
-        },
-        
-        sendMessage: async function() {
-            let input = document.getElementById('chat-input');
-            let text = input.value.trim();
-            if(!text) return;
-            
-            // 检查配置
-            let apiKey = localStorage.getItem('api_key');
-            let baseUrl = localStorage.getItem('api_url') || 'https://api.openai.com/v1';
-            let modelName = localStorage.getItem('api_model') || 'gpt-3.5-turbo';
-
-            if(!apiKey) {
-                alert("请先在【设置】中填写 API Key！");
-                return;
-            }
-
-            // 处理中转站的 URL 后缀 (确保以 /chat/completions 结尾)
-            let endpoint = baseUrl;
-            if (!endpoint.endsWith('/chat/completions')) {
-                endpoint = endpoint.replace(/\/$/, '') + '/chat/completions';
-            }
-
-            // 1. 用户消息上屏
-            DB.chat.push({ type: 'me', text: text });
-            input.value = '';
-            saveDB();
-            PhoneEngine.refreshCurrentApp();
-
-            // 2. 显示正在输入
-            DB.chat.push({ type: 'other', text: '<span style="color:#888;">正在输入...</span>', isTyping: true });
-            PhoneEngine.refreshCurrentApp();
-
-            // 3. 组装历史记录
-            let messages = [{ role: "system", content: SYSTEM_PROMPT }];
-            // 取最近的 12 条聊天记录作为记忆
-            let recentChats = DB.chat.filter(m => !m.isTyping).slice(-12);
-            recentChats.forEach(m => {
-                messages.push({
-                    role: m.type === 'me' ? 'user' : 'assistant',
-                    content: m.text
-                });
-            });
-
-            // 4. 请求中转站 API
-            try {
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + apiKey
-                    },
-                    body: JSON.stringify({
-                        model: modelName,
-                        messages: messages,
-                        temperature: 0.7
-                    })
-                });
-
-                const data = await response.json();
-                
-                // 移除"正在输入"
-                DB.chat = DB.chat.filter(m => !m.isTyping);
-
-                if(data.choices && data.choices[0]) {
-                    let reply = data.choices[0].message.content;
-                    DB.chat.push({ type: 'other', text: reply });
-                } else {
-                    console.error("API 返回异常:", data);
-                    DB.chat.push({ type: 'other', text: '【信号受干扰】请检查中转站地址或模型名称是否正确。' });
-                }
-            } catch (error) {
-                console.error("请求失败:", error);
-                DB.chat = DB.chat.filter(m => !m.isTyping);
-                DB.chat.push({ type: 'other', text: '【终端离线】无法连接到中转站，请检查网络或地址。' });
-            }
-
-            saveDB();
-            PhoneEngine.refreshCurrentApp();
+            renderChatUI(container, 'online_chat', '发送短信...');
         }
     },
-
-    // --- 世界书 App ---
+    offline_chat: {
+        id: 'offline_chat',
+        name: '面对面',
+        icon: '☕',
+        render: function(container) {
+            renderChatUI(container, 'offline_chat', '说话...');
+        }
+    },
     worldbook: {
         id: 'worldbook',
         name: '世界书',
         icon: '📖',
         render: function(container) {
-            let html = `<div style="margin-bottom:20px; color:#8bd17c; font-size:14px;">当前读取：Ashveil 档案库</div>`;
+            let html = `
+            <div class="card" style="background:#181c2b;">
+                <input type="text" id="wb-title" placeholder="词条名称" style="width:100%; padding:8px; margin-bottom:5px; border-radius:5px; border:none; background:#252b40; color:white;">
+                <textarea id="wb-content" placeholder="词条内容..." style="width:100%; padding:8px; height:60px; border-radius:5px; border:none; background:#252b40; color:white; margin-bottom:5px;"></textarea>
+                <button onclick="addWorldbook()" style="width:100%; padding:8px; border-radius:5px; border:none; background:#8bd17c; font-weight:bold; cursor:pointer;">+ 添加词条</button>
+            </div>
+            <div style="margin-bottom:10px; color:#aaa; font-size:12px;">已记录档案：</div>
+            `;
+            
             DB.worldbook.forEach(item => {
                 html += `
-                <div class="card">
-                    <h3>${item.title}</h3>
-                    <p>${item.content}</p>
+                <div class="card" style="position:relative;">
+                    <h3 style="margin-top:0;">${item.title}</h3>
+                    <p style="font-size:13px;">${item.content}</p>
+                    <button onclick="deleteWorldbook(${item.id})" style="position:absolute; top:10px; right:10px; background:transparent; border:none; color:#ff6b6b; cursor:pointer; font-size:16px;">×</button>
                 </div>`;
             });
             container.innerHTML = html;
         }
     },
-
-    // --- 设置 App ---
     settings: {
         id: 'settings',
         name: '设置',
@@ -297,46 +284,110 @@ const PHONE_APPS = {
             let savedUrl = localStorage.getItem('api_url') || '';
             let savedKey = localStorage.getItem('api_key') || '';
             let savedModel = localStorage.getItem('api_model') || '';
+            let savedTokens = localStorage.getItem('api_max_tokens') || '150';
+            let savedPrompt = localStorage.getItem('api_system_prompt') || '你正在扮演《崩坏：星穹铁道》同人角色「不死途」。';
+            let useWb = localStorage.getItem('api_use_worldbook') === 'true' ? 'checked' : '';
 
             container.innerHTML = `
             <div class="card">
-                <h3>AI 核心配置 (中转站)</h3>
+                <h3 style="color:#ff9e9e;">角色灵魂设定 (Prompt)</h3>
+                <textarea id="api-prompt-input" style="width:100%; height:120px; padding:10px; border-radius:8px; border:none; background:#121522; color:white; font-size:12px; margin-bottom:10px;">${savedPrompt}</textarea>
                 
-                <p style="margin:10px 0 5px 0; font-size:12px;">接口地址 (Base URL)</p>
-                <input type="text" id="api-url-input" value="${savedUrl}" placeholder="例如: https://api.xxx.com/v1" style="width:100%; padding:10px; border-radius:8px; border:none; background:#121522; color:white;">
-                
-                <p style="margin:10px 0 5px 0; font-size:12px;">API Key (密钥)</p>
-                <input type="password" id="api-key-input" value="${savedKey}" placeholder="sk-..." style="width:100%; padding:10px; border-radius:8px; border:none; background:#121522; color:white;">
-                
-                <p style="margin:10px 0 5px 0; font-size:12px;">模型名称 (Model)</p>
-                <input type="text" id="api-model-input" value="${savedModel}" placeholder="例如: claude-3-5-sonnet-20240620" style="width:100%; padding:10px; border-radius:8px; border:none; background:#121522; color:white; margin-bottom:15px;">
-                
-                <button onclick="saveSettings()" style="padding:8px 15px; border-radius:8px; border:none; background:#8bd17c; color:#000; cursor:pointer; font-weight:bold;">保存配置</button>
-                <button onclick="clearChat()" style="padding:8px 15px; border-radius:8px; border:none; background:#ff6b6b; color:#fff; cursor:pointer; margin-left:10px;">清空聊天</button>
+                <label style="display:flex; align-items:center; font-size:13px; color:#ccc; margin-bottom:15px;">
+                    <input type="checkbox" id="api-use-wb-input" ${useWb} style="margin-right:8px;">
+                    聊天时携带【世界书】(开启会消耗更多Token)
+                </label>
             </div>
+
             <div class="card">
-                <h3>关于终端</h3>
-                <p>Ashveil Phone OS v2.2</p>
-                <p>支持多模型无缝切换</p>
+                <h3>API 连接配置</h3>
+                <p style="margin:10px 0 5px 0; font-size:12px;">接口地址 (Base URL)</p>
+                <input type="text" id="api-url-input" value="${savedUrl}" style="width:100%; padding:10px; border-radius:8px; border:none; background:#121522; color:white;">
+                
+                <p style="margin:10px 0 5px 0; font-size:12px;">API Key</p>
+                <input type="password" id="api-key-input" value="${savedKey}" style="width:100%; padding:10px; border-radius:8px; border:none; background:#121522; color:white;">
+                
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <div style="flex:1;">
+                        <p style="margin:0 0 5px 0; font-size:12px;">模型名称</p>
+                        <input type="text" id="api-model-input" value="${savedModel}" style="width:100%; padding:10px; border-radius:8px; border:none; background:#121522; color:white;">
+                    </div>
+                    <div style="width:80px;">
+                        <p style="margin:0 0 5px 0; font-size:12px;">最大字数</p>
+                        <input type="number" id="api-tokens-input" value="${savedTokens}" style="width:100%; padding:10px; border-radius:8px; border:none; background:#121522; color:white;">
+                    </div>
+                </div>
+                
+                <button onclick="saveSettings()" style="width:100%; margin-top:15px; padding:10px; border-radius:8px; border:none; background:#8bd17c; color:#000; cursor:pointer; font-weight:bold;">保存所有配置</button>
+                <button onclick="clearChat()" style="width:100%; margin-top:10px; padding:10px; border-radius:8px; border:none; background:#ff6b6b; color:#fff; cursor:pointer; font-weight:bold;">清空所有记忆</button>
             </div>`;
         }
     }
 };
 
-// 保存设置
+// 辅助函数：渲染聊天UI (只渲染当前场景的消息)
+function renderChatUI(container, appId, placeholder) {
+    let chatHTML = `<div id="chat-list-${appId}" style="flex:1; overflow-y:auto; margin-bottom:10px;">`;
+    
+    // 核心：UI 渲染时，过滤出当前场景的消息
+    let sceneMessages = DB.global_chat.filter(m => m.scene === appId);
+    
+    sceneMessages.forEach(msg => {
+        let formattedText = msg.text.replace(/\*(.*?)\*/g, '<span style="color:#aaa; font-style:italic;">*$1*</span>');
+        chatHTML += `
+        <div class="msg-row ${msg.type}">
+            <div class="bubble">${formattedText}</div>
+        </div>`;
+    });
+    chatHTML += `</div>`;
+
+    let inputHTML = `
+    <div class="chat-input-area" style="position:sticky; bottom:0; left:0; right:0; margin:-20px; padding:15px; background:#181c2b; border-top:1px solid #2a2f42;">
+        <input type="text" id="chat-input-${appId}" placeholder="${placeholder}" onkeypress="if(event.keyCode==13) handleChatSend('${appId}')">
+        <button onclick="handleChatSend('${appId}')" style="cursor:pointer;">发送</button>
+    </div>`;
+
+    container.innerHTML = `<div style="display:flex; flex-direction:column; height:100%; position:relative;">${chatHTML}${inputHTML}</div>`;
+    
+    let list = document.getElementById(`chat-list-${appId}`);
+    list.scrollTop = list.scrollHeight;
+}
+
+window.addWorldbook = function() {
+    let title = document.getElementById('wb-title').value.trim();
+    let content = document.getElementById('wb-content').value.trim();
+    if(!title || !content) return alert('名称和内容不能为空');
+    DB.worldbook.push({ id: Date.now(), title, content });
+    saveDB();
+    PhoneEngine.refreshCurrentApp();
+}
+window.deleteWorldbook = function(id) {
+    if(confirm('删除这条档案？')) {
+        DB.worldbook = DB.worldbook.filter(item => item.id !== id);
+        saveDB();
+        PhoneEngine.refreshCurrentApp();
+    }
+}
+
 window.saveSettings = function() {
     localStorage.setItem('api_url', document.getElementById('api-url-input').value.trim());
     localStorage.setItem('api_key', document.getElementById('api-key-input').value.trim());
     localStorage.setItem('api_model', document.getElementById('api-model-input').value.trim());
-    alert('核心配置已保存！');
+    localStorage.setItem('api_max_tokens', document.getElementById('api-tokens-input').value.trim());
+    localStorage.setItem('api_system_prompt', document.getElementById('api-prompt-input').value.trim());
+    localStorage.setItem('api_use_worldbook', document.getElementById('api-use-wb-input').checked);
+    alert('配置已更新！');
 };
 
-// 清空聊天
 window.clearChat = function() {
-    if(confirm('确定要清空与不死途的聊天记录吗？')) {
-        DB.chat = [{ type: 'other', text: '记忆已重置。我们重新认识一下？' }];
+    if(confirm('警告：这将清空线上和线下的所有聊天记忆！确定吗？')) {
+        DB.global_chat = [
+            { type: 'other', scene: 'online_chat', text: '记忆已重置。' },
+            { type: 'other', scene: 'offline_chat', text: '*看着你* 记忆已重置。' }
+        ];
         saveDB();
-        alert('已清空');
+        alert('记忆已清空');
+        PhoneEngine.refreshCurrentApp();
     }
 }
 
@@ -401,3 +452,4 @@ window.onload = () => {
     PhoneEngine.init();
 };
 </script>
+                        

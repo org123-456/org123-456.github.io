@@ -7,18 +7,19 @@
 <style>
     * { box-sizing: border-box; }
     body {
-        body {
-        margin: 0; height: 100vh; width: 100vw; background: #0d111a;
+        margin: 0; height: 100vh; background: #05060b;
+        display: flex; justify-content: center; align-items: center;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        color: white; overflow: hidden;
+        color: white;
     }
     
-    /* 全屏应用外壳 */
+    /* 手机外壳 */
     .phone {
-        width: 100%; height: 100%;
-        background: #0d111a; 
+        width: 390px; height: 820px; max-height: 100vh;
+        background: #0d111a; border-radius: 40px;
+        border: 8px solid #1a1e29; overflow: hidden;
+        position: relative; box-shadow: 0 0 50px rgba(0,0,0,0.8);
         display: flex; flex-direction: column;
-        position: relative;
     }
 
 
@@ -99,7 +100,38 @@
         margin-left: 10px; width: 60px; border-radius: 20px; border: none;
         background: #8bd17c; color: #000; font-weight: bold;
     }
-        <script>
+</style>
+</head>
+<body>
+
+<div class="phone">
+    <!-- 顶部状态栏 -->
+    <div class="status-bar">
+        <span id="status-time">00:00</span>
+        <span>◉ WiFi 🔋</span>
+    </div>
+
+    <!-- 桌面视图 -->
+    <div id="home-screen" class="screen active">
+        <div class="clock-widget">
+            <h1 id="widget-time">00:00</h1>
+            <p>鸽川区 · 侦探终端</p>
+        </div>
+        <!-- App 图标会由 JS 动态生成到这里 -->
+        <div class="app-grid" id="app-grid"></div>
+    </div>
+
+    <!-- App 运行视图 -->
+    <div id="app-screen" class="screen">
+        <div class="app-header">
+            <div class="back-btn" onclick="PhoneEngine.closeApp()">←</div>
+            <div class="app-title" id="app-title">App Name</div>
+        </div>
+        <!-- App 内容会由 JS 动态生成到这里 -->
+        <div class="app-content" id="app-content"></div>
+    </div>
+</div>
+<script>
 // ==========================================
 // 1. 本地数据库 (升级为全局统一时间线)
 // ==========================================
@@ -452,4 +484,3 @@ window.onload = () => {
     PhoneEngine.init();
 };
 </script>
-                        

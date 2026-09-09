@@ -7,20 +7,20 @@
 <style>
     * { box-sizing: border-box; }
     body {
-        margin: 0; height: 100vh; background: #05060b;
-        display: flex; justify-content: center; align-items: center;
+        body {
+        margin: 0; height: 100vh; width: 100vw; background: #0d111a;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        color: white;
+        color: white; overflow: hidden;
     }
     
-    /* 手机外壳 */
+    /* 全屏应用外壳 */
     .phone {
-        width: 390px; height: 820px; max-height: 100vh;
-        background: #0d111a; border-radius: 40px;
-        border: 8px solid #1a1e29; overflow: hidden;
-        position: relative; box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        width: 100%; height: 100%;
+        background: #0d111a; 
         display: flex; flex-direction: column;
+        position: relative;
     }
+
 
     /* 状态栏 */
     .status-bar {
